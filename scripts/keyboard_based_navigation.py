@@ -33,7 +33,7 @@ def get_next_destination(altitude):
     z = altitude
     next = True
 
-    #set next destination
+    #set next destination value
     if (command == 'w'):
         y = 2
     elif (command == 's'):
@@ -45,15 +45,15 @@ def get_next_destination(altitude):
     else:
         next = False
 
-    #final data destination
+    #adding current position with the desired position of x and y orientation 
     x = x + current_pos.x
     y = y + current_pos.y
 
     #data feedback
     #x is move left or right command
     #y is forward or backward command
-    #z is altitude. absolut value
-    #next is continue or stop command
+    #z is altitude. this will set as absolut value as we get from parameter
+    #next is continue or stop command. bool data type
     return [x,y,altitude,next]
      
 def main():
@@ -66,16 +66,20 @@ def main():
     drone.wait4start()
     # Create local reference frame.
     drone.initialize_local_frame()
-    # Request takeoff with an altitude of 2m.
+    # Request altitude for takeoff.
+    rospy.loginfo(CYELLOW2 + CBLINK +
+                      "Waiting for user to input request altitude" + CEND)
     altitude = input("Request altitude : ")
+    #take off into desired altitude
     drone.takeoff(altitude)
 
     # Specify control loop rate. We recommend a low frequency to not over load the FCU with messages. Too many messages will cause the drone to be sluggish.
     rate = rospy.Rate(3)
     
     while True:
+	#getting next destination of the drone from keyboard input
         next_destination = get_next_destination(altitude) 
-
+	#make drone fly into desired position
         drone.set_destination(next_destination[0],next_destination[1],next_destination[2],0)
         rate.sleep()
     
@@ -85,9 +89,6 @@ def main():
     # Land after all waypoints is reached.
     drone.land()
     rospy.loginfo(CGREEN2 + "All waypoints reached landing now." + CEND)
- 	
-    # Used to keep the node running.
-    rospy.spin()
 
 if __name__ == '__main__':
     try:
