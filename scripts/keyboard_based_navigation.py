@@ -56,7 +56,7 @@ def get_next_destination(altitude):
     #next is continue or stop command
     return [x,y,altitude,next]
      
-def main(self):
+def main():
     # Initializing the ROS node.
     rospy.init_node("rps_navigation", anonymous=True)
 
