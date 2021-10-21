@@ -21,9 +21,6 @@ cap.set(cv2.CAP_PROP_FRAME_WIDTH, 150)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 150)
 cap.set(cv2.CAP_PROP_FPS, 15)
 
-# Specify control loop rate. We recommend a low frequency to not over load the FCU with messages. Too many messages will cause the drone to be sluggish.
-rate = rospy.Rate(3)
-
 def rps_detection(img):
     #load model
     model = keras.models.load_model('rock_paper_scissors_model')
@@ -55,7 +52,7 @@ def rock():
     while i < len(goals):
         drone.set_destination(
             x=goals[i][0], y=goals[i][1], z=goals[i][2], psi=goals[i][3])
-        rate.sleep()
+        self.rate.sleep()
         if drone.check_waypoint_reached():
             i += 1
 def paper():
@@ -66,7 +63,7 @@ def paper():
     while i < len(goals):
         drone.set_destination(
             x=goals[i][0], y=goals[i][1], z=goals[i][2], psi=goals[i][3])
-        rate.sleep()
+        self.rate.sleep()
         if drone.check_waypoint_reached():
             i += 1
 	
@@ -78,7 +75,7 @@ def scissors():
     drone.land()
     rospy.loginfo(CGREEN2 + "Landing now." + CEND)
      
-def main():
+def main(self):
     # Initializing the ROS node.
     rospy.init_node("rps_navigation", anonymous=True)
 
@@ -92,6 +89,9 @@ def main():
     drone.initialize_local_frame()
     # Request takeoff with an altitude of 2m.
     drone.takeoff(3)
+
+    # Specify control loop rate. We recommend a low frequency to not over load the FCU with messages. Too many messages will cause the drone to be sluggish.
+    self.rate = rospy.Rate(3)
 	
 	#image detectioin looping
     while True :
