@@ -21,7 +21,7 @@ def get_next_destination(altitude):
     print ("D : move right")
     print ("S : move backward")
 
-    command = input("input command : ")
+    command = raw_input("input command : ")
   
     #get current posisiton
     current_pos = Point()
@@ -34,13 +34,13 @@ def get_next_destination(altitude):
     next = True
 
     #set next destination
-    if (command == 'W'):
+    if (command == 'w'):
         y = 2
-    elif (command == 'S'):
+    elif (command == 's'):
         y = -2
-    elif (command == 'A'):
+    elif (command == 'a'):
         x = -2
-    elif (command == 'D'):
+    elif (command == 'd'):
         x = 2
     else:
         next = False
