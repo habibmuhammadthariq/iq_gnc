@@ -109,8 +109,11 @@ def main():
     drone.wait4start()
     # Create local reference frame.
     drone.initialize_local_frame()
-    # Request takeoff with an altitude of 2m.
+    # Request altitude for takeoff.
+    rospy.loginfo(CYELLOW2 + CBLINK +
+                      "Waiting for user to fill request altitude" + CEND)
     altitude = input("Request altitude : ")
+    #take off into desired altitude
     drone.takeoff(altitude)
 
     # Specify control loop rate. We recommend a low frequency to not over load the FCU with messages. Too many messages will cause the drone to be sluggish.
@@ -119,11 +122,12 @@ def main():
     while True:
         #get next destination value
         next_destination = get_next_destination(altitude) 
+
         #display all of next destination value
         #print ("x direction : {}, y direction : {}, altitude : {}, angle : {}".format(next_destination[0],next_destination[1],next_destination[2],next_destination[3]))
-
         drone.set_destination(next_destination[0],next_destination[1],next_destination[2],next_destination[3])
         rate.sleep()
+
         #update altitude value with the new one
         altitude = next_destination[2]
 
@@ -133,7 +137,8 @@ def main():
     # Land after all waypoints is reached.
     drone.land()
     rospy.loginfo(CGREEN2 + "All waypoints reached landing now." + CEND)
-    #shutdown node
+
+    #shutting down the node
     rospy.signal_shutdown("KeyboardInterupt") 
 
 if __name__ == '__main__':
