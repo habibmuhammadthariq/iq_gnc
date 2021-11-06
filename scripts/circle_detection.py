@@ -15,14 +15,14 @@ while 1:
         cv2.line(modul.img, (cx_img,cy_img), (cx_frm,cy_frm), (255,255,255), 4)
 
         #finding distance from camera to image
-        focal_length, known_width = modul.finding_focalLength()
+        focal_length, known_width = modul.finding_focal_length()
         detected_marker = modul.detail_object(marker,"biggest_contour")
         distance = modul.distance_to_camera(known_width, focal_length, detected_marker[1][0])
 
         #print out the result
         cv2.putText(modul.img, "distanece   : {} cm".format(distance), (30,25), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255,255,255), 2)
-        cv2.putText(modul.img, "x direction : {} cm".format(cx_frm-cx_img), (30,45), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255,255,255), 2)
-        cv2.putText(modul.img, "y direction : {} cm".format(cy_frm-cy_img), (30,65), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255,255,255), 2)
+        cv2.putText(modul.img, "x direction : {} px".format(cx_frm-cx_img), (30,45), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255,255,255), 2)
+        cv2.putText(modul.img, "y direction : {} px".format(cy_frm-cy_img), (30,65), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255,255,255), 2)
     
         #displaying the result in original image
         cv2.imshow("Result 2", modul.img)

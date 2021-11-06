@@ -38,6 +38,7 @@ def finding_object():
     #start streaming
     global img
     _, img = cap.read()
+    print "Image shape : {}".format(img.shape)
     #RGB to HSV 
     img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
@@ -54,7 +55,7 @@ def finding_object():
     print "Number of contours found : {}".format(len(contours))
     #get the biggest contours
     #contours = max(contours, key=cv2.contourArea)
-
+    cv2.imshow("original", img)
     return contours
 
 def centroid_image_v2(contours):
@@ -144,7 +145,7 @@ def finding_focal_length():
     marker = find_marker(image)
     focal_length = (marker[1][0]*known_distance) / known_width
 
-    print "Focal length : {}".format(focalLength)
+    print "Focal length : {}".format(focal_length)
     return focal_length,known_width
 
 def destroy():

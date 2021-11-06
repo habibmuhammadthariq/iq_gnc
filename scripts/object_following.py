@@ -82,21 +82,22 @@ def main():
         #start video and detect orange object there
         marker = modul.finding_object()
 
-        #get centroid object
-        next = get_centroid_object(marker)
+        if len(marker) > 0:
+            #get centroid object
+            next = get_centroid_object(marker)
 
-        #show up the detected object in the frame
-        cv2.imshow("Object Following", modul.img)
+            #show up the detected object in the frame
+            cv2.imshow("Object Following", modul.img)
 
-        #Ask drone to fly into the desire position
-        drone.set_destination(next[0], next[1], altitude, 0)
-        rate.sleep()
+            #Ask drone to fly into the desire position
+            drone.set_destination(next[0], next[1], altitude, 0)
+            rate.sleep()
     
-        if next[2]:
-            break
-        #make the drone land
-        drone.land()
-        rospy.loginfo(CGREEN2 + "All waypoints already reached. Then land" + CEND)
+            if not next[2]:
+                break
+    #make the drone land
+    drone.land()
+    rospy.loginfo(CGREEN2 + "All waypoints already reached. Then land" + CEND)
 
 if __name__ == '__main__':
     try:
