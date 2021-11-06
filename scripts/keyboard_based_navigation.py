@@ -68,7 +68,7 @@ def main():
     drone.initialize_local_frame()
     # Request altitude for takeoff.
     rospy.loginfo(CYELLOW2 + CBLINK +
-                      "Waiting for user to input request altitude" + CEND)
+                      "Waiting for user to fill request altitude" + CEND)
     altitude = input("Request altitude : ")
     #take off into desired altitude
     drone.takeoff(altitude)
