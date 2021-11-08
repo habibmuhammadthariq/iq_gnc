@@ -1,10 +1,10 @@
 import cv2
 import numpy as np
 
-cap = cv2.VideoCapture(0)# + cv2.CAP_DSHOW)
-cap.set(cv2.CAP_PROP_FPS, 10)
-fps = int(cap.get(5))
-print("Fps : ", fps)
+#cap = cv2.VideoCapture(0)# + cv2.CAP_DSHOW)
+#cap.set(cv2.CAP_PROP_FPS, 10)
+#fps = int(cap.get(5))
+#print("Fps : ", fps)
 
 def centroid_frame():
     (h,w) = img.shape[:2]
@@ -34,10 +34,10 @@ def find_marker(image):
 
     return cv2.minAreaRect(c)
 
-def finding_object():
+def finding_object(image):
     #start streaming
     global img
-    _, img = cap.read()
+    img = image
     print "Image shape : {}".format(img.shape)
     #RGB to HSV 
     img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -149,8 +149,6 @@ def finding_focal_length():
     return focal_length,known_width
 
 def destroy():
-    #release video capture
-    cap.release()
     #close all windows
     cv2.destroyAllWindows()
 
