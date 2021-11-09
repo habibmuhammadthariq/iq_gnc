@@ -17,23 +17,6 @@ def centroid_frame():
     #returning centroid of this frame
     return cx,cy
 
-def find_marker(image):
-    #RGB to HSV
-    img_hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-    
-    #range value of blue color 
-    lower = np.array([90,60,80])
-    upper = np.array([110,255,255])
-    mask = cv2.inRange(img_hsv, lower, upper)
-
-    #finding contours
-    image, contours, hierarchy = cv2.findContours(mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-    #merge all contours found
-    #contours = np.vstack(contours)
-    c = max(contours, key=cv2.contourArea)
-
-    return cv2.minAreaRect(c)
-
 def finding_object(image):
     #start streaming
     global img
@@ -55,7 +38,7 @@ def finding_object(image):
     print "Number of contours found : {}".format(len(contours))
     #get the biggest contours
     #contours = max(contours, key=cv2.contourArea)
-    cv2.imshow("original", img)
+    #cv2.imshow("original", img)
     return contours
 
 def centroid_image_v2(contours):
@@ -131,23 +114,6 @@ def detail_object(contours, contour_type):
     #this will return (center(x,y), (width, height), angle of rotation)
     return cv2.minAreaRect(cnt)
     
-def finding_focal_length():
-    #initialize the known distance from the camera to the marker
-    known_distance = 50    
-    #initialize the known width
-    known_width = 19.5
-
-    #load image that have known distance 50 cm and known width of marker 19.5 cm
-    #image = raw_input("Input image directory and name + extension : ")
-    image = cv2.imread("img/circle_marker.jpg")
-
-    #finding marker on that image
-    marker = find_marker(image)
-    focal_length = (marker[1][0]*known_distance) / known_width
-
-    print "Focal length : {}".format(focal_length)
-    return focal_length,known_width
-
 def destroy():
     #close all windows
     cv2.destroyAllWindows()

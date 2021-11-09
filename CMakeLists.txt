@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   mavros_msgs
   rospy
   sensor_msgs
+  cv_bridge
 )
 
 ## System dependencies are found with CMake's conventions
