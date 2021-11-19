@@ -51,29 +51,29 @@ class detect_an_object:
 
     def next_destination(self):
         next = True
-        x = 0
-        y = 0
+        x = 0.0
+        y = 0.0
 
-        xfrm_xobj = self.cx_frm-self.cx_obj
-        yfrm_yobj = self.cy_frm-self.cy_obj
+        xfrm_xobj = self.cx_obj-self.cx_frm
+        yfrm_yobj = self.cy_obj-self.cy_frm
 
         if len(self.contours) > 0:
-            if (xfrm_xobj < -30) and (yfrm_yobj < -30):
+            if (xfrm_xobj < -20) and (yfrm_yobj < -20):
                 x = -1
-                y = -1
-            elif (xfrm_xobj < -30) and (yfrm_yobj > 30):
+                # y = -1
+            elif (xfrm_xobj < -20) and (yfrm_yobj > 20):
                 x = -1
-                y = 1
-            elif (xfrm_xobj > 30) and (yfrm_yobj < -30):
+                # y = 1
+            elif (xfrm_xobj > 20) and (yfrm_yobj < -20):
                 x = 1
-                y = -1
-            elif (xfrm_xobj > 30) and (yfrm_yobj > 30):
+                # y = -1
+            elif (xfrm_xobj > 20) and (yfrm_yobj > 20):
                 x = 1
-                y = 1
+                # y = 1
             else:
                 next = False
 
-            return x, y, next
+            return [x, y, next]
 
     def centroid(self):
         self.cx_obj, self.cy_obj = modul.centroid_image_v2(self.contours)
@@ -83,6 +83,9 @@ class detect_an_object:
         # draw line from centroid image into centroid object
         cv2.line(self.img, (self.cx_obj, self.cy_obj),
                  (self.cx_frm, self.cy_frm), (255, 255, 255), 4)
+
+        cv2.putText(self.img, "Distance in X direction : {} and Y direction : {}".format(
+            self.cx_frm-self.cx_obj, self.cy_frm-self.cy_obj), (30, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 255, 255), 2)
 
     def object_distance(self):
         if len(self.contours) > 0:
@@ -100,7 +103,7 @@ class detect_an_object:
 
 
 # Create an object for the API and make it as global variable
-drone = gnc_api()
+# drone = gnc_api()
 
 
 def main():
@@ -110,41 +113,49 @@ def main():
     start = time.time()
     print("Current time : {}".format(time.ctime(start)))
 
-    # # wait for FCU connection
-    drone.wait4connect()
-    # # wait for the mode to be SWITCH
-    drone.wait4start()
-    # # create local reference frame
-    drone.initialize_local_frame()
-    # # request altitude for takeoff
-    rospy.loginfo(CYELLOW2 + CBLINK +
-                  "Waiting for user to fill the request Altitude" + CEND)
-    altitude = input("Request Altitude : ")
-    # # take off
-    drone.takeoff(altitude)
+    #  wait for FCU connection
+    # drone.wait4connect()
+    #  wait for the mode to be SWITCH
+    # drone.wait4start()
+    #  create local reference frame
+    # drone.initialize_local_frame()
+    #  request altitude for takeoff
+    # rospy.loginfo(CYELLOW2 + CBLINK +
+    #   "Waiting for user to fill the request Altitude" + CEND)
+    # altitude = input("Request Altitude : ")
+    #  take off
+    # drone.takeoff(altitude)
 
     # initialize detect_an_object class as an object
     objek = detect_an_object()
 
     # Specify control loop rate. We recommend a low frequency to not over load the FCU with messages. Too many messages will cause the drone to be sluggish.
-    rate = rospy.Rate(1)
+    rate = rospy.Rate(3)
 
     while True:
-
         if len(objek.contours) > 0:
             # get centroid object
             next = objek.next_destination()
 
             # Ask drone to fly into the desire position
-            cur_pos = drone.get_current_location()
-            x = next[0] + cur_pos.x
-            y = next[1] + cur_pos.y
+            cur_pos = Point()
+            # cur_pos = drone.get_current_location()
+            # x = next[0] + cur_pos.x
+            # y = next[1] + cur_pos.y
 
-            drone.set_destination(x, y, altitude, 0)
+            print("Kira kira bisa ditambahin gak ya : {},{}".format(
+                next[0], next[1]))
+
+            # print("Tipe data dari next : {}, tipe data dari position : {}".format(
+            # type(next[1]), type(cur_pos.y)))
+
+            # print("X : {} and Y : {}".format(x, y))
+
+            # drone.set_destination(x, y, altitude, 0)
             rate.sleep()
 
             if not next[2]:
-                drone.set_mode("RTL")
+                print("I'm out")
                 rate.sleep()
                 break
         else:
@@ -152,11 +163,12 @@ def main():
             # if the drone has flown for 30 seconds
             now = time.time()
             tia = (start - now)/60
-            if (tia) < 0.5:
+            if (tia) < 1:
                 continue
 
-    # make the drone land
-    drone.land()
+    # make the drone back to home then land
+    # drone.set_mode("RTL")
+    # drone.land()
     rospy.loginfo(CGREEN2 + "All waypoints already reached. Then land" + CEND)
 
 
