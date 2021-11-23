@@ -18,20 +18,25 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 
 # Create an object for the API and make it as global variable
-drone = gnc_api()
+# drone = gnc_api()
 
 class detect_an_object(object):
-    def __init__(self, arg):
+    def __init__(self, params):
         self.cx_obj = 0
         self.cy_obj = 0
         self.cx_frm = 0
         self.cy_frm = 0
-        self.altitude = arg[0]
-        self.startFly = arg[1]
+        self.altitude = params.get('altitude') #arg[1]
+        self.startFly = params.get('start') #arg[2]
         self.contours = []  # this is list
         self.bridge = CvBridge()
         self.img_sub = rospy.Subscriber(
             "/webcam", Image, self.img_cb)  # 10 -> queue_size
+        self.drone = params.get('droneApi') #arg[0]
+
+        #temp
+        self.x = 0
+        self.y = 0
 
     def img_cb(self, data):
         try:
@@ -46,25 +51,62 @@ class detect_an_object(object):
             self.centroid()
             self.object_distance()
 
-        #ask drone to fly into desired waypoint
+        #get current position of the drone
         current_pos = Point()
-        next = self.next_destination()
-        if not next[2]: 
-            x = current_pos.x + next[0]
-            y = current_pos.y + next[1]
+        current_pos = self.drone.get_current_location()
+        print ("Lokasi saat ini : {},{}".format(current_pos.x, current_pos.y))
 
-            drone.set_destination(x, y, self.altitude, 0)
-            rospy.sleep(3)
+
+        # Specify control loop rate. We recommend a low frequency to not over load the FCU with messages. Too many messages will cause the drone to be sluggish.
+        # rate = rospy.Rate(0.1)
+
+        #ask drone to fly into desired waypoint
+        if len(self.contours) > 0:
+            #get next destination
+            (x_direction, y_direction, next) = self.next_destination()
+            # print ("Perintah berikutnya : {},{}".format(self.x, self.y))
+            
+            if next: 
+                next_pos = Point()
+                next_pos.x = x_direction + current_pos.x
+                next_pos.y = y_direction + current_pos.y
+                print ("Next destination is {},{} - altitude : {}".format(next_pos.x,next_pos.y, self.altitude))
+
+                self.drone.set_destination(next_pos.x, next_pos.y, self.altitude, 0)
+                # rate.sleep()
+            else:
+                #kalo ada perintah khusus ketika objek telah berada tepat di tengah quadcopter
+                #silahkan letakkan disini
+
+                # calculate time in air in minute
+                now = time.time()
+                tia = (now -self.startFly)/60
+                print ("Time in air : {}".format(tia))
+                if (tia) > 0.5:
+                    # ask the drone back to home then land
+                    # if the drone has flown for more than 30's
+                    self.drone.set_mode("RTL")
+                    self.drone.land()
+                    rospy.loginfo(CGREEN2 + "All waypoints already reached. Then land" + CEND)
+                    
+                    #stop spinning the ros node.
+                    #as i know, the rospy.spin() method will always run until 
+                    #we give the true value into rospy.is_shutdown 
+                    rospy.on_shutdown()
+                    #or
+                    sys.exit()
+                    #or
+                    rospy.signal_shutdown()
+
+                    #this is the second option.
+                    #just stop to subscribe into this topic
+                    img_sub.unregister()
+
+
+                    #btw, i just knew that we can looping the subscriber with 
+                    #rospy.rate.sleep(ex : 10, that mean 10 Hz)
         else:
-            # calculate time in air in minute
-            # if the drone has flown for 30 seconds
-            now = time.time()
-            tia = (self.startFly - now)/60
-            if (tia) > 1:
-                # make the drone back to home then land
-                drone.set_mode("RTL")
-                drone.land()
-                rospy.loginfo(CGREEN2 + "All waypoints already reached. Then land" + CEND)
+            pass
 
 
         # show up the detected object in the frame
@@ -76,7 +118,7 @@ class detect_an_object(object):
         return self.contours
 
     def next_destination(self):
-        next = True
+        next = False
         x = 0.0
         y = 0.0
 
@@ -84,28 +126,38 @@ class detect_an_object(object):
         yfrm_yobj = self.cy_obj-self.cy_frm
 
         if len(self.contours) > 0:
+            next = True
+
             if (xfrm_xobj < -20) and (yfrm_yobj < -20):
-                x = -0.5
+                x = -0.2
+                # self.x = -0.5
                 # y = -1
             elif (xfrm_xobj < -20) and (yfrm_yobj > 20):
-                x = -0.5
+                x = -0.2
+                # self.x = -0.5
                 # y = 1
             elif (xfrm_xobj > 20) and (yfrm_yobj < -20):
-                x = 0.5
+                x = 0.2
+                # self.x = 0.5
                 # y = -1
             elif (xfrm_xobj > 20) and (yfrm_yobj > 20):
-                x = 0.5
+                x = 0.2
+                # self.x = 0.5
                 # y = 1
             else:
                 next = False
 
-            return [x, y, next]
+        print("Apakah ada perintah lanjut : {}".format(next))
+
+        return [x, y, next]
+            # return next
 
     def centroid(self):
         self.cx_obj, self.cy_obj = modul.centroid_image_v2(self.contours)
         self.cx_frm, self.cy_frm = modul.centroid_frame()
         # print("cX and cY object : {},{} - cX and cY frame : {},{}".format(self.cx_obj,
         #   self.cy_obj, self.cx_frm, self.cy_frm))
+
         # draw line from centroid image into centroid object
         cv2.line(self.img, (self.cx_obj, self.cy_obj),
                  (self.cx_frm, self.cy_frm), (255, 255, 255), 4)
@@ -117,11 +169,12 @@ class detect_an_object(object):
         if len(self.contours) > 0:
             # finding distance from camera into image
             marker = modul.detail_object(self.contours, "biggest_contour")
+
             # we can get focal_length using find_distance_from_camera_to_image.py file and of course we need to change any variable there
             distance = modul.distance_to_camera(
                 19.5, 784.615384615, marker[1][0])
 
-            # print out the result
+            # print out the result at the image
             cv2.putText(self.img, "Distance camera to object : {}".format(
                 distance), (30, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 255, 255), 2)
 
@@ -133,6 +186,8 @@ class detect_an_object(object):
 def main():
     # initialize ros node
     rospy.init_node("ObjectFollowing", anonymous="True")
+
+    drone = gnc_api()
 
     #  wait for FCU connection
     drone.wait4connect()
@@ -152,53 +207,20 @@ def main():
     print("Current time : {}".format(time.ctime(start)))
 
     # initialize detect_an_object class as an object
-    objek = detect_an_object([altitude,start])
+    params = {
+        "altitude": altitude,
+        "start": start,
+        "droneApi": drone
+    }
+    objek = detect_an_object(params)
 
     # Specify control loop rate. We recommend a low frequency to not over load the FCU with messages. Too many messages will cause the drone to be sluggish.
     # rate = rospy.Rate(3)
-
-    # while True:
-    #     if len(objek.contours) > 0:
-    #         # get centroid object
-    #         next = objek.next_destination()
-
-    #         # Ask drone to fly into the desire position
-    #         cur_pos = Point()
-    #         # cur_pos = drone.get_current_location()
-    #         # x = next[0] + cur_pos.x
-    #         # y = next[1] + cur_pos.y
-
-    #         print("Kira kira bisa ditambahin gak ya : {},{}".format(
-    #             next[0], next[1]))
-
-    #         # print("Tipe data dari next : {}, tipe data dari position : {}".format(
-    #         # type(next[1]), type(cur_pos.y)))
-
-    #         # print("X : {} and Y : {}".format(x, y))
-
-    #         # drone.set_destination(x, y, altitude, 0)
-    #         rate.sleep()
-
-    #         if not next[2]:
-    #             print("I'm out")
-    #             rate.sleep()
-    #             break
-    #     else:
-    #         # calculate time in air in minute
-    #         # if the drone has flown for 30 seconds
-    #         now = time.time()
-    #         tia = (start - now)/60
-    #         if (tia) < 1:
-    #             continue
-
-    # make the drone back to home then land
-    # drone.set_mode("RTL")
-    # drone.land()
-    # rospy.loginfo(CGREEN2 + "All waypoints already reached. Then land" + CEND)
 
 
 if __name__ == '__main__':
     try:
         main()
+        rospy.spin()
     except KeyboardInterrupt:
         exit()
