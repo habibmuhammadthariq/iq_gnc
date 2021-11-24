@@ -94,13 +94,11 @@ class detect_an_object(object):
                     #we give the true value into rospy.is_shutdown 
                     rospy.on_shutdown()
                     #or
-                    sys.exit()
-                    #or
                     rospy.signal_shutdown()
 
                     #this is the second option.
                     #just stop to subscribe into this topic
-                    img_sub.unregister()
+                    self.img_sub.unregister()
 
 
                     #btw, i just knew that we can looping the subscriber with 
