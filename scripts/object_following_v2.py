@@ -17,22 +17,20 @@ from geometry_msgs.msg import Point
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 
-# Create an object for the API and make it as global variable
-# drone = gnc_api()
-
 class detect_an_object(object):
     def __init__(self, params):
         self.cx_obj = 0
         self.cy_obj = 0
         self.cx_frm = 0
         self.cy_frm = 0
-        self.altitude = params.get('altitude') #arg[1]
-        self.startFly = params.get('start') #arg[2]
+        self.distance = 0
+        self.altitude = params.get('altitude')
+        self.startFly = params.get('start')
         self.contours = []  # this is list
         self.bridge = CvBridge()
         self.img_sub = rospy.Subscriber(
             "/webcam", Image, self.img_cb)  # 10 -> queue_size
-        self.drone = params.get('droneApi') #arg[0]
+        self.drone = params.get('droneApi')
 
         #temp
         self.x = 0
@@ -49,7 +47,7 @@ class detect_an_object(object):
         self.img = cv_img
         if len(self.contours) > 0:
             self.centroid()
-            self.object_distance()
+            self.distance = self.object_distance() #---
 
         #get current position of the drone
         current_pos = Point()
@@ -58,7 +56,7 @@ class detect_an_object(object):
 
 
         # Specify control loop rate. We recommend a low frequency to not over load the FCU with messages. Too many messages will cause the drone to be sluggish.
-        # rate = rospy.Rate(0.1)
+        rate = rospy.Rate(0.5)
 
         #ask drone to fly into desired waypoint
         if len(self.contours) > 0:
@@ -75,8 +73,10 @@ class detect_an_object(object):
                 self.drone.set_destination(next_pos.x, next_pos.y, self.altitude, 0)
                 # rate.sleep()
             else:
-                #kalo ada perintah khusus ketika objek telah berada tepat di tengah quadcopter
-                #silahkan letakkan disini
+                """
+                kalo ada perintah khusus ketika objek telah berada tepat di tengah quadcopter
+                silahkan letakkan disini
+                """
 
                 # calculate time in air in minute
                 now = time.time()
@@ -86,31 +86,26 @@ class detect_an_object(object):
                     # ask the drone back to home then land
                     # if the drone has flown for more than 30's
                     self.drone.set_mode("RTL")
+                    rate.sleep()
                     self.drone.land()
                     rospy.loginfo(CGREEN2 + "All waypoints already reached. Then land" + CEND)
                     
-                    #stop spinning the ros node.
-                    #as i know, the rospy.spin() method will always run until 
-                    #we give the true value into rospy.is_shutdown 
-                    rospy.on_shutdown()
-                    #or
-                    rospy.signal_shutdown()
-
-                    #this is the second option.
-                    #just stop to subscribe into this topic
+                    #stop subscribing this topic
                     self.img_sub.unregister()
 
-
-                    #btw, i just knew that we can looping the subscriber with 
-                    #rospy.rate.sleep(ex : 10, that mean 10 Hz)
+                    """
+                    1. stop spinning the ros node.
+                    2. as i know, the rospy.spin() method will always run until 
+                       we give the true value into rospy.is_shutdown 
+                    """
+                    rospy.signal_shutdown("")
         else:
             pass
 
 
         # show up the detected object in the frame
         cv2.imshow("Object Following", self.img)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            cv2.destroyAllWindows
+        cv2.waitKey(1)
 
     def get_ojbect(self):
         return self.contours
@@ -125,25 +120,20 @@ class detect_an_object(object):
 
         if len(self.contours) > 0:
             next = True
-
+            
             if (xfrm_xobj < -20) and (yfrm_yobj < -20):
                 x = -0.2
-                # self.x = -0.5
-                # y = -1
             elif (xfrm_xobj < -20) and (yfrm_yobj > 20):
                 x = -0.2
-                # self.x = -0.5
-                # y = 1
             elif (xfrm_xobj > 20) and (yfrm_yobj < -20):
                 x = 0.2
-                # self.x = 0.5
-                # y = -1
             elif (xfrm_xobj > 20) and (yfrm_yobj > 20):
                 x = 0.2
-                # self.x = 0.5
-                # y = 1
             else:
-                next = False
+                if (self.distance > 30):
+                    y = 0.2
+                else:
+                    next = False
 
         print("Apakah ada perintah lanjut : {}".format(next))
 
@@ -178,9 +168,6 @@ class detect_an_object(object):
 
             return distance
 
-
-
-
 def main():
     # initialize ros node
     rospy.init_node("ObjectFollowing", anonymous="True")
@@ -211,9 +198,6 @@ def main():
         "droneApi": drone
     }
     objek = detect_an_object(params)
-
-    # Specify control loop rate. We recommend a low frequency to not over load the FCU with messages. Too many messages will cause the drone to be sluggish.
-    # rate = rospy.Rate(3)
 
 
 if __name__ == '__main__':
